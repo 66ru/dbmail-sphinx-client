@@ -1,0 +1,40 @@
+source user{{ userId }}
+{
+    type = mysql
+    sql_host = {{ db.host }}
+    sql_user = {{ db.user }}
+    sql_pass = {{ db.password }}
+    sql_db = {{ db.dbname }}
+    sql_query_pre = SET NAMES utf8
+    sql_query = SELECT * FROM sphinx_search WHERE userId = {{ userId }}
+    sql_attr_uint = messageId
+    sql_attr_uint = mailboxId
+}
+
+index user{{ userId }}
+{
+    source = user{{ userId }}
+    path = {{ indexDirectory }}/user{{ userId }}
+
+    morphology = stem_ru
+    min_stemming_len = 4
+    charset_type = utf-8
+    charset_table = 0..9, A..Z->a..z, _, a..z, U+410..U+42F->U+430..U+44F, U+430..U+44F, U+401->U+435, U+451->U+435
+    enable_star = 1
+    min_prefix_len = 3
+    html_strip = 1
+}
+
+indexer
+{
+    mem_limit = 32M
+}
+
+searchd
+{
+    listen = {{ searchdPort }}:mysql41
+    max_children = 30
+    pid_file = {{ indexDirectory }}/user{{ userId }}.pid
+    max_matches = 1000
+    compat_sphinxql_magics = 0
+}

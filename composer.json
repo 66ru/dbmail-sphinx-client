@@ -1,0 +1,15 @@
+{
+    "name": "66ru/dbmail-sphinx-client",
+    "minimum-stability": "dev",
+    "authors": [
+        {
+            "name": "m8rge",
+            "email": "to.merge@gmail.com"
+        }
+    ],
+    "require": {
+        "silex/silex": "~1.0",
+        "twig/twig": ">=1.8,<2.0-dev",
+        "raven/raven": "0.7.1"
+    }
+}
