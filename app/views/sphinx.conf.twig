@@ -33,6 +33,7 @@ indexer
 searchd
 {
     listen = {{ searchdPort }}:mysql41
+    log = {{ indexDirectory }}/user{{ userId }}.log
     max_children = 30
     pid_file = {{ pidFile }}
     max_matches = 1000

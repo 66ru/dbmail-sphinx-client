@@ -6,6 +6,11 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
+$app = new \Silex\Application(array(
+    'debug' => $params['debug'],
+    'params' => $params,
+    'appDir' => __DIR__,
+));
 $app->register(
     new Silex\Provider\TwigServiceProvider(),
     array(
@@ -41,3 +46,4 @@ if (!$app['debug']) {
         }
     );
 }
+return $app;

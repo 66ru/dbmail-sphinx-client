@@ -38,11 +38,6 @@ if (!empty($params['sentryDSN'])) {
     $error_handler->registerShutdownFunction();
 }
 
-$app = new \Silex\Application(array(
-    'debug' => $params['debug'],
-    'params' => $params,
-    'appDir' => realpath(__DIR__ . '/../app'),
-));
-require(__DIR__ . '/../app/bootstrap.php');
+$app = require(__DIR__ . '/../app/bootstrap.php');
 require(__DIR__ . '/../app/app.php');
 $app->run();

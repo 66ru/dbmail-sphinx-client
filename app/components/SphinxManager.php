@@ -117,15 +117,38 @@ class SphinxManager
         }
     }
 
+    /**
+     * @param string $configFilePath
+     */
     public function reindex($configFilePath)
     {
         $configFilePath = escapeshellarg($configFilePath);
         CommandLineHelper::exec($this->app['params']['sphinx']['indexer'] . " --config $configFilePath --all --quiet");
     }
 
+    /**
+     * @param string $configFilePath
+     */
+    public function terminateDaemon($configFilePath)
+    {
+        $configFilePath = escapeshellarg($configFilePath);
+        CommandLineHelper::exec($this->app['params']['sphinx']['searchd'] . " --config $configFilePath --stop");
+    }
+
+    /**
+     * @param string $configFilePath
+     */
     public function serve($configFilePath)
     {
         $configFilePath = escapeshellarg($configFilePath);
         CommandLineHelper::exec($this->app['params']['sphinx']['searchd'] . " --config $configFilePath");
+    }
+
+    /**
+     * @return string
+     */
+    public function getIndexDirectory()
+    {
+        return $this->indexDirectory;
     }
 }
