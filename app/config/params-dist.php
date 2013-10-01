@@ -9,6 +9,10 @@ return array(
         'user' => '',
         'password' => '',
     ),
+    'sphinx' => array(
+        'indexer' => '',
+        'searchd' => '',
+    ),
     'sentryDSN' => '',
     'secretKey' => '',
 );

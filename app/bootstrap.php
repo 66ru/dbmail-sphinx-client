@@ -14,14 +14,18 @@ $app->register(
 );
 $app['sphinx'] = $app->share(
     function () use ($app, $params) {
-        return new \app\components\SphinxManager($app, $params);
+        return new \app\components\SphinxManager($app);
     }
 );
 if (!$app['debug']) {
     $app->error(
         function (\Exception $e, $code) {
             $status = $code ? $code : 500;
-            $message = $e->getMessage() ? $e->getMessage() : 'An error has occurred';
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                $message = $e->getMessage();
+            } else {
+                $message = 'An error has occurred';
+            }
             return new JsonResponse(array(
                     'status' => $status,
                     'message' => $message,

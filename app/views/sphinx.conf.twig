@@ -34,7 +34,7 @@ searchd
 {
     listen = {{ searchdPort }}:mysql41
     max_children = 30
-    pid_file = {{ indexDirectory }}/user{{ userId }}.pid
+    pid_file = {{ pidFile }}
     max_matches = 1000
     compat_sphinxql_magics = 0
 }
