@@ -4,8 +4,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-///** @var \Silex\Application $app */
-///** @var $console \Symfony\Component\Console\Application */
 $console->register('searchdTerminate')
     ->setDefinition(
         array(
