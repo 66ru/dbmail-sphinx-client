@@ -3,7 +3,7 @@
 * В случае ошибки возвращает следующий ответ, где `httpReturnCode` - int, код состояния http ответа:
     
     ```js
-    {"status": httpStatusCode, "message": "Human error message"}
+    {"status": httpStatusCode, "message": "Human readable error message"}
     ```
 
 ## Доступные методы
