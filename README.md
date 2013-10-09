@@ -2,7 +2,7 @@
 
 ## Общие данные
 * Каждый запрос должен содержать заголовок `SecKey`, который должен быть равен параметру `secretKey` в файле params.php
-* В случае ошибки возвращает следующий ответ, где `httpReturnCode` - int, код состояния http ответа:
+* В случае ошибки возвращает следующий ответ, где `httpStatusCode` - int, код состояния http ответа:
     
     ```js
     {"status": httpStatusCode, "message": "Human readable error message"}
