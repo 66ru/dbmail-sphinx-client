@@ -2,6 +2,7 @@
 
 use app\helpers\CommandLineHelper;
 use Silex\Application;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SphinxManager
 {
@@ -10,11 +11,15 @@ class SphinxManager
 
     /** @var  string */
     protected $indexDirectory;
+    /** @var  \Memcached */
+    protected $memcache;
 
     function __construct(Application $app)
     {
         $this->app = $app;
         $this->indexDirectory = $app['appDir'] . '/indexes';
+        $this->memcache = new \Memcached();
+        $this->memcache->addServer($app['params']['memcache']['host'], $app['params']['memcache']['port']);
     }
 
     /**
@@ -38,6 +43,7 @@ class SphinxManager
     /**
      * @param int $userId
      * @throws \ErrorException
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException
      * @return string
      */
     public function getSphinxUri($userId)
@@ -45,19 +51,43 @@ class SphinxManager
         $pidExists = file_exists($this->indexDirectory . "/user$userId.pid");
         $confExists = file_exists($this->indexDirectory . "/user$userId.conf");
         if ($pidExists && $confExists) {
-            $config = file_get_contents($this->indexDirectory . "/user$userId.conf");
-            $portOffset = strrpos($config, 'listen = ') + 9;
-            $port = substr($config, $portOffset, 5);
+            $port = $this->getPortFromConfig($userId);
         } elseif ($pidExists && !$confExists) {
             throw new \ErrorException("Pid for $userId exist, but not config file");
         } else {
-            $port = $this->getAvailablePort();
-            $this->writeConfig($userId, $port);
-            $configFilePath = $this->getConfigFilePath($userId);
-            $this->reindex($configFilePath);
-            $this->serve($configFilePath);
+            $lockKey = 'sphinxIndexerRun' . $userId;
+            if ($this->memcache->add($lockKey, 1, 3600)) {
+                $port = $this->getAvailablePort();
+                $this->writeConfig($userId, $port);
+                $configFilePath = $this->getConfigFilePath($userId);
+                $this->reindex($configFilePath);
+                $this->serve($configFilePath);
+                $this->memcache->delete($lockKey);
+            } else {
+                if ($this->waitForKey($lockKey)) {
+                    $port = $this->getPortFromConfig($userId);
+                } else {
+                    throw new HttpException(500, "Can't get sphinxUri. Try again later.");
+                }
+            }
         }
         return $_SERVER['SERVER_ADDR'] . ':' . $port;
+    }
+
+    /**
+     * @param $key string
+     * @param $timeoutSeconds int
+     * @return bool true if unlocked
+     */
+    public function waitForKey($key, $timeoutSeconds = 5)
+    {
+        $i = 0;
+        while ($this->memcache->get($key) && $i < $timeoutSeconds * 1000000) {
+            usleep(100000); // 100ms
+            $i += 100000;
+        }
+
+        return $this->memcache->get($key) === false;
     }
 
     /**
@@ -150,5 +180,17 @@ class SphinxManager
     public function getIndexDirectory()
     {
         return $this->indexDirectory;
+    }
+
+    /**
+     * @param $userId
+     * @return string
+     */
+    protected function getPortFromConfig($userId)
+    {
+        $config = file_get_contents($this->indexDirectory . "/user$userId.conf");
+        $portOffset = strrpos($config, 'listen = ') + 9;
+        $port = substr($config, $portOffset, 5);
+        return $port;
     }
 }

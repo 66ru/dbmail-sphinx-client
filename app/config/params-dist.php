@@ -13,6 +13,10 @@ return array(
         'indexer' => '',
         'searchd' => '',
     ),
+    'memcache' => array(
+        'server' => '',
+        'port' => '',
+    ),
     'sentryDSN' => '',
     'secretKey' => '',
 );
