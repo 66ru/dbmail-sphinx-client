@@ -9,6 +9,7 @@ source user{{ userId }}
     sql_query = SELECT * FROM sphinx_search WHERE userId = {{ userId }}
     sql_attr_uint = messageId
     sql_attr_uint = mailboxId
+    sql_attr_uint = timestamp
 }
 
 index user{{ userId }}
@@ -16,7 +17,7 @@ index user{{ userId }}
     source = user{{ userId }}
     path = {{ indexDirectory }}/user{{ userId }}
 
-    morphology = stem_ru
+    morphology = stem_enru, metaphone
     min_stemming_len = 4
     charset_type = utf-8
     charset_table = 0..9, A..Z->a..z, _, a..z, U+410..U+42F->U+430..U+44F, U+430..U+44F, U+401->U+435, U+451->U+435
