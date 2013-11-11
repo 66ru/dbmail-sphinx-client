@@ -11,7 +11,7 @@
         "facebook/xhprof": "dev-master"
     },
     "require": {
-        "silex/silex": "v1.1.1",
+        "silex/silex": "v1.1.2",
         "symfony/console": "v2.3.6",
         "twig/twig": ">=1.8,<2.0-dev",
         "raven/raven": "0.7.1"
