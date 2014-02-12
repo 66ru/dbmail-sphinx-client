@@ -6,10 +6,19 @@ source user{{ userId }}
     sql_pass = {{ db.password }}
     sql_db = {{ db.dbname }}
     sql_query_pre = SET NAMES utf8
-    sql_query = SELECT * FROM sphinx_search WHERE userId = {{ userId }}
+    sql_query = SELECT * FROM sphinx_search WHERE userId = {{ userId }} \
+        AND id <= ( SELECT mainTopId FROM sphinx_counter WHERE userId = {{ userId }} )
     sql_attr_uint = messageId
-    sql_attr_uint = mailboxId
     sql_attr_uint = timestamp
+}
+
+source user{{ userId }}_delta : user{{ userId }}
+{
+    sql_query_pre = SET NAMES utf8
+    sql_query_pre = SELECT MAX(id) INTO @maxId FROM sphinx_search
+    sql_query_pre = UPDATE sphinx_counter S SET S.`deltaTopId` = @maxId WHERE userId = {{ userId }}
+    sql_query = SELECT * FROM sphinx_search WHERE userId = {{ userId }} \
+        AND id > ( SELECT mainTopId FROM sphinx_counter WHERE userId = {{ userId }} )
 }
 
 index user{{ userId }}
@@ -24,6 +33,12 @@ index user{{ userId }}
     enable_star = 1
     min_prefix_len = 3
     html_strip = 1
+}
+
+index user{{ userId }}_delta : user{{ userId }}
+{
+    source = user{{ userId }}_delta
+    path = {{ indexDirectory }}/user{{ userId }}_delta
 }
 
 indexer

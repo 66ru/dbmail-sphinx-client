@@ -48,10 +48,23 @@ class SphinxManager
      */
     public function getSphinxUri($userId)
     {
-        $pidExists = file_exists($this->indexDirectory . "/user$userId.pid");
-        $confExists = file_exists($this->indexDirectory . "/user$userId.conf");
+        $configFilePath = $this->getConfigFilePath($userId);
+        $pidFilePath = $this->getPidFilePath($userId);
+        $pidExists = file_exists($pidFilePath);
+        $confExists = file_exists($configFilePath);
+
+        if ($pidExists) {
+            $pid = trim(file_get_contents($pidFilePath));
+            $processStartedTime = @filectime('/proc/' . $pid);
+            if (!$processStartedTime) {
+                unlink($pidFilePath);
+                $pidExists = false;
+            }
+        }
+
         if ($pidExists && $confExists) {
             $port = $this->getPortFromConfig($userId);
+            $this->reindexInBackground($configFilePath, "user{$userId}_delta");
         } elseif ($pidExists && !$confExists) {
             throw new \ErrorException("Pid for $userId exist, but not config file");
         } else {
@@ -59,9 +72,16 @@ class SphinxManager
             if ($this->memcache->add($lockKey, 1, 3600)) {
                 $port = $this->getAvailablePort();
                 $this->writeConfig($userId, $port);
-                $configFilePath = $this->getConfigFilePath($userId);
-                $this->reindex($configFilePath);
-                $this->serve($configFilePath);
+
+                if ($this->insertEmptyCounter($userId)) {
+                    $this->reindex($configFilePath);
+                    $this->serve($configFilePath);
+                } else {
+                    $this->rotate($configFilePath, "user$userId", "user{$userId}_delta");
+                    $this->serve($configFilePath);
+                    $this->rotateMaxIds($userId);
+                    $this->reindexInBackground($configFilePath, "user{$userId}_delta");
+                }
                 $this->memcache->delete($lockKey);
             } else {
                 if ($this->waitForKey($lockKey)) {
@@ -149,11 +169,50 @@ class SphinxManager
 
     /**
      * @param string $configFilePath
+     * @param string $indexName
      */
-    public function reindex($configFilePath)
+    public function reindex($configFilePath, $indexName = '--all')
     {
         $configFilePath = escapeshellarg($configFilePath);
-        CommandLineHelper::exec($this->app['params']['sphinx']['indexer'] . " --config $configFilePath --all --quiet");
+        $indexName = escapeshellarg($indexName);
+        CommandLineHelper::exec($this->app['params']['sphinx']['indexer'] . " --config $configFilePath $indexName --quiet");
+    }
+
+    /**
+     * @param string $configFilePath
+     * @param string $indexName
+     */
+    public function reindexInBackground($configFilePath, $indexName = '--all')
+    {
+        $configFilePath = escapeshellarg($configFilePath);
+        $indexName = escapeshellarg($indexName);
+        CommandLineHelper::exec($this->app['params']['sphinx']['indexer'] . " --config $configFilePath $indexName --quiet --rotate &");
+    }
+
+    /**
+     * @param string $configFilePath
+     * @param string $mainIndexName
+     * @param string $deltaIndexName
+     */
+    public function rotate($configFilePath, $mainIndexName, $deltaIndexName)
+    {
+        $configFilePath = escapeshellarg($configFilePath);
+        $mainIndexName = escapeshellarg($mainIndexName);
+        $deltaIndexName = escapeshellarg($deltaIndexName);
+        CommandLineHelper::exec($this->app['params']['sphinx']['indexer'] . " --config $configFilePath --merge $mainIndexName $deltaIndexName --quiet");
+    }
+
+    /**
+     * @param int $userId
+     * @return bool success or not
+     */
+    protected function rotateMaxIds($userId)
+    {
+        /** @var \PDO $pdo */
+        $pdo = $this->app['pdo'];
+        $PDOStatement = $pdo->prepare("UPDATE sphinx_counter SET mainTopId = deltaTopId WHERE userId = :userId");
+        $PDOStatement->execute(array(':userId' => $userId));
+        return (bool)$PDOStatement->rowCount();
     }
 
     /**
@@ -192,5 +251,18 @@ class SphinxManager
         $portOffset = strrpos($config, 'listen = ') + 9;
         $port = substr($config, $portOffset, 5);
         return $port;
+    }
+
+    /**
+     * @param int $userId
+     * @return bool whether empty counter line was inserted successfully
+     */
+    protected function insertEmptyCounter($userId)
+    {
+        /** @var \PDO $pdo */
+        $pdo = $this->app['pdo'];
+        $PDOStatement = $pdo->prepare("INSERT IGNORE INTO sphinx_counter VALUES (:userId, 0, 0)");
+        $PDOStatement->execute(array(':userId' => $userId));
+        return (bool)$PDOStatement->rowCount();
     }
 }

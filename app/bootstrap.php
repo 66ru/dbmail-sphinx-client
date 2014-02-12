@@ -2,6 +2,7 @@
 
 /** @var \Silex\Application $app */
 
+use CSanquer\Silex\PdoServiceProvider\Provider\PDOServiceProvider;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -17,6 +18,21 @@ $app->register(
         'twig.path' => __DIR__ . '/views',
     )
 );
+$app->register(
+    new PdoServiceProvider(),
+    array(
+        'pdo.db.options' => array(
+            'driver' => 'mysql',
+            'host' => $params['db']['host'],
+            'dbname' => $params['db']['dbname'],
+            'user' => $params['db']['user'],
+            'password' => $params['db']['password'],
+            'options' => array(
+                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES 'UTF8'"
+            ),
+        ),
+    )
+);
 $app['sphinx'] = $app->share(
     function () use ($app, $params) {
         return new \app\components\SphinxManager($app);
@@ -24,7 +40,8 @@ $app['sphinx'] = $app->share(
 );
 if (!$app['debug']) {
     $app->error(
-        function (\Exception $e, $code) {
+        function (\Exception $e, $code) use ($client) {
+            $client->captureException($e);
             $status = $code ? $code : 500;
             if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
                 $message = $e->getMessage();
