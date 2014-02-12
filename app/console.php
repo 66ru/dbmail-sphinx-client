@@ -22,7 +22,7 @@ $console->register('searchdTerminate')
                 if (filemtime($pidFilename) < time() - $timeout*60) {
                     $pid = trim(file_get_contents($pidFilename));
                     $processStartedTime = @filectime('/proc/' . $pid);
-                    if (!$processStartedTime) {
+                    if (empty($pid) || !$processStartedTime) {
                         unlink($pidFilename);
                         continue;
                     }
