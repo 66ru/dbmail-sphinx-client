@@ -20,6 +20,13 @@ $console->register('searchdTerminate')
 
             foreach (glob($sphinx->getIndexDirectory() . '/user*.pid') as $pidFilename) {
                 if (filemtime($pidFilename) < time() - $timeout*60) {
+                    $pid = trim(file_get_contents($pidFilename));
+                    $processStartedTime = @filectime('/proc/' . $pid);
+                    if (!$processStartedTime) {
+                        unlink($pidFilename);
+                        continue;
+                    }
+
                     $configFilename = str_replace('.pid', '.conf', $pidFilename);
                     $sphinx->terminateDaemon($configFilename);
                 }
