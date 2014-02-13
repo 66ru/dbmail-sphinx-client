@@ -69,7 +69,7 @@ class SphinxManager
             throw new \ErrorException("Pid for $userId exist, but not config file");
         } else {
             $lockKey = 'sphinxIndexerRun' . $userId;
-            if ($this->memcache->add($lockKey, 1, 3600)) {
+            if ($this->memcache->add($lockKey, 1, 300)) {
                 $port = $this->getAvailablePort();
                 $this->writeConfig($userId, $port);
 
