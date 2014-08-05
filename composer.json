@@ -15,6 +15,6 @@
         "symfony/console": "v2.3.6",
         "twig/twig": ">=1.8,<2.0-dev",
         "raven/raven": "0.7.1",
-        "csanquer/pdo-service-provider": "dev-master"
+        "csanquer/pdo-service-provider": "0.5.0"
     }
 }
