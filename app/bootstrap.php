@@ -2,7 +2,7 @@
 
 /** @var \Silex\Application $app */
 
-use CSanquer\Silex\PdoServiceProvider\Provider\PDOServiceProvider;
+use Csanquer\Silex\PdoServiceProvider\Provider\PDOServiceProvider;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
